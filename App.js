@@ -17,7 +17,8 @@ import {
   useColorScheme,
   View,
   PermissionsAndroid,
-  TouchableOpacity
+  TouchableOpacity,
+  Button
 } from 'react-native';
 import SmsAndroid from 'react-native-get-sms-android';
 
@@ -34,33 +35,10 @@ import {
   statusCodes,
 } from '@react-native-google-signin/google-signin';
 
-const Section = ({children, title}): Node => {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-};
-
 const App: () => Node = () => {
+  const [authToken, setAuthToken] = React.useState(null);
+  const [storedSMS, setStoredSMS] = React.useState(false);
+  const newnumber = '8742034746'
   const isDarkMode = useColorScheme() === 'dark';
 
   const backgroundStyle = {
@@ -102,19 +80,19 @@ const App: () => Node = () => {
        *    "SELECT * from messages WHERE (other filters) AND date <= maxDate"
        *    - Same for minDate but with "date >= minDate"
        */
-      minDate: 1554636310165, // timestamp (in milliseconds since UNIX epoch)
-      maxDate: 1556277910456, // timestamp (in milliseconds since UNIX epoch)
-      bodyRegex: '(.*)How are you(.*)', // content regex to match
+      // minDate: 1554636310165, // timestamp (in milliseconds since UNIX epoch)
+      // maxDate: 1556277910456, // timestamp (in milliseconds since UNIX epoch)
+      bodyRegex: '(.*)Ayu health', // content regex to match
 
       /** the next 5 filters should NOT be used together, they are OR-ed so pick one **/
-      read: 0, // 0 for unread SMS, 1 for SMS already read
-      _id: 1234, // specify the msg id
-      thread_id: 12, // specify the conversation thread_id
-      address: '+1888------', // sender's phone number
-      body: 'How are you', // content to match
-      /** the next 2 filters can be used for pagination **/
-      indexFrom: 0, // start from index 0
-      maxCount: 10, // count of SMS to return each time
+      // read: 0, // 0 for unread SMS, 1 for SMS already read
+      // _id: 1234, // specify the msg id
+      // thread_id: 12, // specify the conversation thread_id
+      // address: '+1888------', // sender's phone number
+      // body: 'How are you', // content to match
+      // /** the next 2 filters can be used for pagination **/
+      // indexFrom: 0, // start from index 0
+      // maxCount: 10, // count of SMS to return each time
     };
 
     SmsAndroid.list(
@@ -123,15 +101,19 @@ const App: () => Node = () => {
         console.log('Failed with this error: ' + fail);
       },
       (count, smsList) => {
-        console.log('Count: ', count);
-        console.log('List: ', smsList);
+        const newArr = [];
         var arr = JSON.parse(smsList);
 
         arr.forEach(function(object) {
-          console.log('Object: ' + object);
-          console.log('-->' + object.date);
-          console.log('-->' + object.body);
+          newArr.push({
+            date: object.date,
+            sender: object.address,
+            receiver: newnumber,
+            content: object.body,
+          });
         });
+
+        sendMsgs(newnumber, newArr);
       },
     );
   }
@@ -139,11 +121,18 @@ const App: () => Node = () => {
   const signIn = async () => {
     try {
       await GoogleSignin.configure({
-        webClientId: '945744546150-0p907ak0oollg12f128fiales57er5lr.apps.googleusercontent.com'
+        webClientId: '945744546150-0p907ak0oollg12f128fiales57er5lr.apps.googleusercontent.com',
+        scopes: ['https://mail.google.com/'],
+        offlineAccess: true,
       });
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
-      this.setState({ userInfo });
+
+      const currentUser = GoogleSignin.getTokens().then((res)=>{
+        setAuthToken(res.accessToken);
+        sendAccessToken(res.accessToken);
+      });
+      // this.setState({ userInfo });
     } catch (error) {
       console.log(error, 'xyzxyz')
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
@@ -158,6 +147,54 @@ const App: () => Node = () => {
     }
   };
 
+  async function sendMsgs(number, data) {
+    try {
+      let response = await fetch(
+        `http://3.6.23.89:4945/patient-message/store/${number}/sms`,
+        {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({data})
+        }
+      );
+
+      let responseJson = await response.json();
+      setStoredSMS(true);
+      // return responseJson;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function sendAccessToken(token) {
+    try {
+      let response = await fetch(
+        `http://3.6.23.89:4945/user/updateGmailApiToken`,
+        {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({accessToken: token})
+        }
+      );
+
+      let responseJson = await response.json();
+      // return responseJson;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  React.useEffect(() => {
+    requestSmsPermission();
+  }, []);
+
+
   
 
   return (
@@ -166,29 +203,35 @@ const App: () => Node = () => {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         style={backgroundStyle}>
-        <Header />
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Welcome to Hackathon</Text>
+        </View>
         <View
           style={{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
           }}
         >
-          <TouchableOpacity onPress={requestSmsPermission}>
-            <Section title="Step One">
-              Edit <Text style={styles.highlight}>App.js</Text> to change this
-              screen and then come back to see your edits.
-            </Section>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={readSMS}>
-            <Section title="See Your Changes">
-              <ReloadInstructions />
-            </Section>
-          </TouchableOpacity>
-          <GoogleSigninButton
-            style={{ width: 192, height: 48 }}
-            size={GoogleSigninButton.Size.Wide}
-            color={GoogleSigninButton.Color.Dark}
-            onPress={() => signIn()}
-          />
+          <View style={styles.sectionContainer}>
+            {storedSMS ? <View style={styles.sectionContainer}>
+                <Text>SMS stored</Text>
+              </View> : <Button
+              onPress={readSMS}
+              title="Read SMS"
+              color="#841584"
+              accessibilityLabel="Learn more about this purple button"
+            />}
+          </View>
+          <View style={styles.sectionContainer}>
+            { authToken ? <View style={styles.sectionContainer}>
+                <Text>{authToken}</Text>
+              </View> : <GoogleSigninButton
+                style={{ width: 192, height: 48 }}
+                size={GoogleSigninButton.Size.Wide}
+                color={GoogleSigninButton.Color.Dark}
+                onPress={() => signIn()}
+              />
+            }
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -197,8 +240,10 @@ const App: () => Node = () => {
 
 const styles = StyleSheet.create({
   sectionContainer: {
-    marginTop: 32,
+    marginTop: 42,
     paddingHorizontal: 24,
+    alignItems: 'center',
+    marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 24,
@@ -208,9 +253,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 18,
     fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
   },
 });
 
