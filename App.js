@@ -28,6 +28,11 @@ import {
   LearnMoreLinks,
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 
 const Section = ({children, title}): Node => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -131,6 +136,28 @@ const App: () => Node = () => {
     );
   }
 
+  const signIn = async () => {
+    try {
+      await GoogleSignin.configure({
+        webClientId: '945744546150-0p907ak0oollg12f128fiales57er5lr.apps.googleusercontent.com'
+      });
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      this.setState({ userInfo });
+    } catch (error) {
+      console.log(error, 'xyzxyz')
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled the login flow
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // operation (e.g. sign in) is in progress already
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        // play services not available or outdated
+      } else {
+        // some other error happened
+      }
+    }
+  };
+
   
 
   return (
@@ -156,13 +183,12 @@ const App: () => Node = () => {
               <ReloadInstructions />
             </Section>
           </TouchableOpacity>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+          <GoogleSigninButton
+            style={{ width: 192, height: 48 }}
+            size={GoogleSigninButton.Size.Wide}
+            color={GoogleSigninButton.Color.Dark}
+            onPress={() => signIn()}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

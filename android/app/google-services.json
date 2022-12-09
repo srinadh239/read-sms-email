@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "945744546150",
+    "project_id": "read-mail-371111",
+    "storage_bucket": "read-mail-371111.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945744546150:android:f74a9f37bc4231fc2760a7",
+        "android_client_info": {
+          "package_name": "com.awesomeproject"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "945744546150-rislmnj2a7848nsatq1l3l3sn83s45fi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRZblvfKgU1wXA1DAgihGtMoDU4tJH4OQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "945744546150-0p907ak0oollg12f128fiales57er5lr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
